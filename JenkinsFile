@@ -1,57 +1,57 @@
 pipeline {
-  agent {
-    docker {
-      image 'huzaifafev/spring-boot-app-cicd:v1'
-      args '--user root -v /var/run/docker.sock:/var/run/docker.sock'
-    }
+  agent any
+
+  environment {
+    SONAR_URL = "http://34.201.34.124:9000/"
+    DOCKER_IMAGE = "huzaifafev/spring-boot-app-cicd:${BUILD_NUMBER}"
+    DOCKERFILE_LOCATION = "./Dockerfile"
+    GIT_REPO_NAME = "Spring-boot-application"
+    GIT_USER_NAME = "huzaifadevcloud"
   }
 
   stages {
-    stage('Checkout') {
+    stage('Build & Test Inside Docker') {
       steps {
-        git branch: 'main', url: 'https://github.com/huzaifadevcloud/Spring-boot-application.git'
-      }
-    }
-
-    stage('Build and Test') {
-      steps {
-        sh 'ls -ltr'
-        // build the project and create a JAR file
-        sh 'mvn clean package'
-      }
-    }
-
-    stage('Static Code Analysis') {
-      environment {
-        SONAR_URL = "http://34.201.34.124:9000/"
-      }
-      steps {
-        withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
-          sh 'mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=$SONAR_URL'
-        }
-      }
-    }
-
-    stage('Build and Push Docker Image') {
-      environment {
-        DOCKER_IMAGE = "huzaifafev/spring-boot-app-cicd:${BUILD_NUMBER}"
-      }
-      steps {
-        withCredentials([usernamePassword(credentialsId: 'docker-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-          script {
-            sh "docker build -t ${DOCKER_IMAGE} ."
-            sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
-            sh "docker push ${DOCKER_IMAGE}"
+        script {
+          docker.image('huzaifafev/spring-boot-app-cicd:v1').inside('--user root -v /var/run/docker.sock:/var/run/docker.sock') {
+            sh '''
+              echo "✅ Inside Docker Container"
+              ls -la
+              mvn clean package
+            '''
           }
         }
       }
     }
 
-    stage('Update Deployment File') {
-      environment {
-        GIT_REPO_NAME = "Spring-boot-application"
-        GIT_USER_NAME = "huzaifadevcloud"
+    stage('Static Code Analysis (SonarQube)') {
+      steps {
+        withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
+          script {
+            docker.image('huzaifafev/spring-boot-app-cicd:v1').inside('--user root -v /var/run/docker.sock:/var/run/docker.sock') {
+              sh '''
+                echo "📦 Running SonarQube Scan..."
+                mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url='${SONAR_URL}'
+              '''
+            }
+          }
+        }
       }
+    }
+
+    stage('Build & Push Docker Image') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'docker-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+          sh '''
+            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+            docker build -t ${DOCKER_IMAGE} -f ${DOCKERFILE_LOCATION} .
+            docker push ${DOCKER_IMAGE}
+          '''
+        }
+      }
+    }
+
+    stage('Update Deployment Manifest') {
       steps {
         withCredentials([
           usernamePassword(credentialsId: 'github', usernameVariable: 'GITHUB_USERNAME', passwordVariable: 'GITHUB_TOKEN'),
@@ -63,11 +63,5 @@ pipeline {
             git config --global user.email "$GIT_USER_EMAIL"
             sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
             git add java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
-            git commit -m "Update deployment image to version ${BUILD_NUMBER}"
-            git push https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:main
-          '''
-        }
-      }
-    }
-  }
-}
+            git commit -m "🚀 Update image tag to ${BUILD_NUMBER}"
+            git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
