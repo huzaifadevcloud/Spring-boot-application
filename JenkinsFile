@@ -2,13 +2,19 @@ pipeline {
   agent {
     docker {
       image 'huzaifafev/maven-docker-agent'
-      args '-v /var/run/docker.sock:/var/run/docker.sock --user root --entrypoint cat'
+      args '-v /var/run/docker.sock:/var/run/docker.sock --user root'
     }
+  }
+
+  environment {
+    GIT_REPO_NAME = "Spring-boot-application"
+    DEPLOYMENT_FILE_PATH = "java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml"
   }
 
   stages {
     stage('Checkout') {
       steps {
+        // This ensures the workspace is a git repo
         git branch: 'main', url: 'https://github.com/huzaifadevcloud/Spring-boot-application.git'
       }
     }
@@ -46,9 +52,10 @@ pipeline {
       }
     }
 
-    stage('Update Deployment File') {
+    stage('Update Deployment File & Push') {
       environment {
-        GIT_REPO_NAME = "Spring-boot-application"
+        // These are set as environment variables for the script block
+        DEPLOYMENT_FILE_PATH = "java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml"
       }
       steps {
         withCredentials([
@@ -57,12 +64,13 @@ pipeline {
           string(credentialsId: 'git-user-email', variable: 'GIT_USER_EMAIL')
         ]) {
           sh '''
-            git config --global user.name "$GIT_USER_NAME"
-            git config --global user.email "$GIT_USER_EMAIL"
-            sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
-            git add java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
-            git commit -m "Update deployment image to version ${BUILD_NUMBER}"
-            git push https://${GITHUB_TOKEN}@github.com/${GITHUB_USERNAME}/${GIT_REPO_NAME}.git HEAD:main
+            git config user.name "$GIT_USER_NAME"
+            git config user.email "$GIT_USER_EMAIL"
+            sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" $DEPLOYMENT_FILE_PATH
+            git add $DEPLOYMENT_FILE_PATH
+            git commit -m "Update deployment image to version ${BUILD_NUMBER}" || echo "No changes to commit"
+            git remote set-url origin https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/${GITHUB_USERNAME}/${GIT_REPO_NAME}.git
+            git push origin HEAD:main
           '''
         }
       }
