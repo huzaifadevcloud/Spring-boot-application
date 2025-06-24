@@ -6,6 +6,25 @@ pipeline {
     }
   }
 
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+        sh 'echo "WORKSPACE IS: $WORKSPACE"; pwd; ls -la; ls -la $WORKSPACE; git status || echo "No git repo"'
+      }
+    }
+    // ... other stages as before ...
+  }
+}
+
+/*pipeline {
+  agent {
+    docker {
+      image 'huzaifafev/maven-docker-agent'
+      args '-v /var/run/docker.sock:/var/run/docker.sock --user root'
+    }
+  }
+
   environment {
     GIT_REPO_NAME = "Spring-boot-application"
     DEPLOYMENT_FILE_PATH = "spring-boot-app-manifests/deployment.yml"
@@ -75,4 +94,4 @@ pipeline {
       }
     }
   }
-}
+}*/
