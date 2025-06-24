@@ -1,14 +1,9 @@
-# Base image with Maven and Java 17
-FROM maven:3.9.6-eclipse-temurin-17
+# Runtime image using Java 17
+FROM eclipse-temurin:17-jdk-alpine
 
-# Switch to root user to install additional packages
-USER root
+# Copy the built jar file into the container
+ARG JAR_FILE=target/spring-boot-web.jar
+COPY ${JAR_FILE} app.jar
 
-# Install Docker CLI inside container (for Docker-in-Docker)
-RUN apt-get update && apt-get install -y docker.io && rm -rf /var/lib/apt/lists/*
-
-# Set the working directory
-WORKDIR /app
-
-# Default command to keep container running so Jenkins can exec into it
-CMD ["tail", "-f", "/dev/null"]
+# Run the application
+ENTRYPOINT ["java", "-jar", "app.jar"]
