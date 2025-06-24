@@ -2,8 +2,7 @@ pipeline {
   agent {
     docker {
       image 'huzaifafev/maven-docker-agent'
-      args '-v /var/run/docker.sock:/var/run/docker.sock --user root'
-      //args '-v /var/run/docker.sock:/var/run/docker.sock --user root --entrypoint cat'
+      args '-v /var/run/docker.sock:/var/run/docker.sock --user root --entrypoint cat'
     }
   }
 
