@@ -11,6 +11,14 @@ pipeline {
     DEPLOYMENT_FILE_PATH = "java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml"
   }
 
+  stage('Test Credentials') {
+  steps {
+    withCredentials([usernamePassword(credentialsId: 'github', usernameVariable: 'USER', passwordVariable: 'TOKEN')]) {
+      sh 'git ls-remote https://${USER}:${TOKEN}@github.com/huzaifadevcloud/Spring-boot-application.git'
+    }
+  }
+}
+
   stages {
     stage('Checkout') {
       steps {
