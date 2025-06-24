@@ -8,7 +8,7 @@ pipeline {
 
   environment {
     GIT_REPO_NAME = "Spring-boot-application"
-    DEPLOYMENT_FILE_PATH = "java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml"
+    DEPLOYMENT_FILE_PATH = "spring-boot-app-manifests/deployment.yml"
   }
 
 
