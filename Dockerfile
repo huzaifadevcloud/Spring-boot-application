@@ -1,14 +1,14 @@
 FROM eclipse-temurin:17-jdk-alpine
 
-# Set work directory (optional, but neat)
-WORKDIR /app
+# Install required tools: git, maven, docker-cli
+RUN apk update && apk add --no-cache git maven docker-cli
 
-# Copy the built jar from the target directory
-ARG JAR_FILE=target/spring-boot-web.jar
-COPY ${JAR_FILE} app.jar
+# Simply the artifact path
+ARG artifact=target/spring-boot-web.jar
 
-# Expose the port your Spring Boot app runs on (optional)
-EXPOSE 8080
+WORKDIR /opt/app
 
-# Run the application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+COPY ${artifact} app.jar
+
+# This should not be changed
+ENTRYPOINT ["java","-jar","app.jar"]
