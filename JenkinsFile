@@ -15,7 +15,6 @@ pipeline {
     stage('Checkout') {
       steps {
         checkout scm
-        /
       }
     }
 
@@ -54,7 +53,6 @@ pipeline {
 
     stage('Update Deployment File & Push') {
       environment {
-        // These are set as environment variables for the script block
         DEPLOYMENT_FILE_PATH = "java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml"
       }
       steps {
