@@ -15,8 +15,7 @@ pipeline {
     stage('Checkout') {
       steps {
         checkout scm
-        // This ensures the workspace is a git repo
-        //git branch: 'main', url: 'https://github.com/huzaifadevcloud/Spring-boot-application.git'
+        /
       }
     }
 
