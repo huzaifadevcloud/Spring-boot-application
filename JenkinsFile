@@ -53,24 +53,23 @@ pipeline {
     }
 
     stage('Update Deployment File & Push') {
-      environment {
-        DEPLOYMENT_FILE_PATH = "java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml"
-      }
       steps {
-        withCredentials([
-          usernamePassword(credentialsId: 'github', usernameVariable: 'GITHUB_USERNAME', passwordVariable: 'GITHUB_TOKEN'),
-          string(credentialsId: 'git-user-name', variable: 'GIT_USER_NAME'),
-          string(credentialsId: 'git-user-email', variable: 'GIT_USER_EMAIL')
-        ]) {
-          sh '''
-            git config user.name "$GIT_USER_NAME"
-            git config user.email "$GIT_USER_EMAIL"
-            sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" $DEPLOYMENT_FILE_PATH
-            git add $DEPLOYMENT_FILE_PATH
-            git commit -m "Update deployment image to version ${BUILD_NUMBER}" || echo "No changes to commit"
-            git remote set-url origin https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/${GITHUB_USERNAME}/${GIT_REPO_NAME}.git
-            git push origin HEAD:main
-          '''
+        dir("${env.WORKSPACE}") {
+          withCredentials([
+            usernamePassword(credentialsId: 'github', usernameVariable: 'GITHUB_USERNAME', passwordVariable: 'GITHUB_TOKEN'),
+            string(credentialsId: 'git-user-name', variable: 'GIT_USER_NAME'),
+            string(credentialsId: 'git-user-email', variable: 'GIT_USER_EMAIL')
+          ]) {
+            sh '''
+              git config user.name "$GIT_USER_NAME"
+              git config user.email "$GIT_USER_EMAIL"
+              sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" $DEPLOYMENT_FILE_PATH
+              git add $DEPLOYMENT_FILE_PATH
+              git commit -m "Update deployment image to version ${BUILD_NUMBER}" || echo "No changes to commit"
+              git remote set-url origin https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/${GITHUB_USERNAME}/${GIT_REPO_NAME}.git
+              git push origin HEAD:main
+            '''
+          }
         }
       }
     }
