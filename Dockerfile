@@ -1,18 +1,14 @@
-# You can change this base image to anything else
-# But make sure to use the correct version of Java
-# Use Java 17 base image
-
+# Base image with Maven and Java 17
 FROM maven:3.9.6-eclipse-temurin-17
 
-# Install Docker CLI
-RUN apt-get update && apt-get install -y docker.io
+# Switch to root user to install additional packages
+USER root
 
-# Simply the artifact path
-ARG artifact=target/spring-boot-web.jar
+# Install Docker CLI inside container (for Docker-in-Docker)
+RUN apt-get update && apt-get install -y docker.io && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /opt/app
+# Set the working directory
+WORKDIR /app
 
-COPY ${artifact} app.jar
-
-# This should not be changed
-ENTRYPOINT ["java","-jar","app.jar"]
+# Default command to keep container running so Jenkins can exec into it
+CMD ["tail", "-f", "/dev/null"]
