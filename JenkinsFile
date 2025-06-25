@@ -15,8 +15,15 @@ pipeline {
   stages {
     stage('Checkout') {
       steps {
-        checkout scm
-        sh 'pwd && ls -la && git status'
+        sh '''
+          echo "Verifying working directory and .git presence"
+          pwd
+          ls -la
+          if [ -d ".git" ]; then echo ".git exists"; else echo ".git NOT found"; fi
+          git status || echo "Not a Git repo"
+        '''
+        //checkout scm
+        //sh 'pwd && ls -la && git status'
       }
     }
 
